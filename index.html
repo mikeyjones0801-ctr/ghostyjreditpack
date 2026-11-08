@@ -90,7 +90,7 @@ dialog input{width:100%;margin:14px 0;padding:11px;background:var(--bg);color:va
   <label>photo/audio: <input type="file" id="fFile" accept="image/*,audio/*"></label>
   <input id="fPrev" placeholder="or preview path/link">
   <button class="btn sm" id="add">add pack</button>
-  <button class="btn sm ghost" id="export">copy data to publish</button>
+  <button class="btn sm ghost" id="export">download packs.json</button>
   <button class="btn sm ghost" id="logout">log out</button>
 </div>
 
@@ -118,8 +118,7 @@ dialog input{width:100%;margin:14px 0;padding:11px;background:var(--bg);color:va
 
 <script>
 // ===== PUBLISHED DATA =====
-// To make new packs visible to everyone: log in, click "copy data to publish",
-// then paste over the SEED array below and re-upload this file.
+// Visitors see packs.json (upload it to the repo). SEED is only the fallback.
 const SEED = [
   {sec:"adjustments",name:"Dark Cinematic",desc:"Moody contrast and teal shadows.",link:"#"},
   {sec:"adjustments",name:"Clean Pop",desc:"Bright, saturated, sharp.",link:"#"},
@@ -132,8 +131,9 @@ const SECTIONS = ["adjustments","assets","sfx","shakes","audios"];
 const PW_HASH = "99363b26926d2797a6347ca62e2c6636b637f0e6787d00f06e552b1cffa8aa7b";
 const KEY = "ghostyjr_packs";
 
-let packs;
-try { packs = JSON.parse(localStorage.getItem(KEY)) || SEED.slice(); } catch(e){ packs = SEED.slice(); }
+let published = SEED.slice(), packs = SEED.slice();
+const getLocal = () => { try{ return JSON.parse(localStorage.getItem(KEY)); }catch(e){ return null; } };
+const useData = () => { packs = document.body.classList.contains("admin") ? (getLocal() || published.slice()) : published; render(); };
 const save = () => { try{ localStorage.setItem(KEY, JSON.stringify(packs)); }catch(e){} };
 
 const $ = id => document.getElementById(id);
@@ -181,7 +181,7 @@ async function sha(t){
   const buf = await crypto.subtle.digest("SHA-256",new TextEncoder().encode(t));
   return [...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,"0")).join("");
 }
-const setAdmin = on => { document.body.classList.toggle("admin",on); try{ on?sessionStorage.setItem("ghosty_admin","1"):sessionStorage.removeItem("ghosty_admin"); }catch(e){} };
+const setAdmin = on => { document.body.classList.toggle("admin",on); try{ on?sessionStorage.setItem("ghosty_admin","1"):sessionStorage.removeItem("ghosty_admin"); }catch(e){} useData(); };
 const openLogin = () => { $("pw").value=""; $("err").textContent=""; $("dlg").showModal(); $("pw").focus(); };
 
 $("foot").onclick = openLogin;
@@ -212,10 +212,11 @@ $("add").onclick = async ()=>{
   ["fName","fDesc","fLink","fPrev","fFile"].forEach(i=>$(i).value="");
   document.getElementById($("fSec").value).scrollIntoView();
 };
-$("export").onclick = async ()=>{
-  const txt = "const SEED = "+JSON.stringify(packs,null,1)+";";
-  try{ await navigator.clipboard.writeText(txt); alert("Copied. Paste it over the SEED array in index.html and re-upload."); }
-  catch(e){ prompt("Copy this:",txt); }
+$("export").onclick = ()=>{
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(new Blob([JSON.stringify(packs)],{type:"application/json"}));
+  a.download="packs.json"; a.click();
+  alert("Saved packs.json. Upload it to your GitHub repo (Add file > Upload files) so everyone can see your packs.");
 };
 try{ if(sessionStorage.getItem("ghosty_admin")) setAdmin(true); }catch(e){}
 // ===== CLICK SOUND =====
@@ -238,6 +239,7 @@ function clickSound(){
 }
 document.addEventListener("click",e=>{ if(e.target.closest("a,button,.logo")) clickSound(); });
 render();
+fetch("packs.json?v="+Date.now()).then(r=>r.ok?r.json():null).then(d=>{ if(Array.isArray(d)){ published=d; useData(); } }).catch(()=>{});
 </script>
 </body>
 </html>
