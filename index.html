@@ -121,37 +121,12 @@ dialog input{width:100%;margin:14px 0;padding:11px;background:var(--bg);color:va
 // To make new packs visible to everyone: log in, click "copy data to publish",
 // then paste over the SEED array below and re-upload this file.
 const SEED = [
-const SEED = [
- {
-  "sec": "adjustments",
-  "name": "Dark Cinematic",
-  "desc": "Moody contrast and teal shadows.",
-  "link": "#"
- },
- {
-  "sec": "adjustments",
-  "name": "Clean Pop",
-  "desc": "Bright, saturated, sharp.",
-  "link": "#"
- },
- {
-  "sec": "sfx",
-  "name": "Impact SFX",
-  "desc": "Hits, whooshes and risers.",
-  "link": "#"
- },
- {
-  "sec": "shakes",
-  "name": "Shake Presets",
-  "desc": "Smooth and violent camera shakes.",
-  "link": "#"
- },
- {
-  "sec": "audios",
-  "name": "Edit Audios",
-  "desc": "Songs and clips for edits.",
-  "link": "#"
- }
+  {sec:"adjustments",name:"Dark Cinematic",desc:"Moody contrast and teal shadows.",link:"#"},
+  {sec:"adjustments",name:"Clean Pop",desc:"Bright, saturated, sharp.",link:"#"},
+  {sec:"assets",name:"Overlay Pack 1",desc:"Glows, grain, light leaks.",link:"#"},
+  {sec:"sfx",name:"Impact SFX",desc:"Hits, whooshes and risers.",link:"#"},
+  {sec:"shakes",name:"Shake Presets",desc:"Smooth and violent camera shakes.",link:"#"},
+  {sec:"audios",name:"Edit Audios",desc:"Songs and clips for edits.",link:"#"}
 ];
 const SECTIONS = ["adjustments","assets","sfx","shakes","audios"];
 const PW_HASH = "99363b26926d2797a6347ca62e2c6636b637f0e6787d00f06e552b1cffa8aa7b";
@@ -243,6 +218,25 @@ $("export").onclick = async ()=>{
   catch(e){ prompt("Copy this:",txt); }
 };
 try{ if(sessionStorage.getItem("ghosty_admin")) setAdmin(true); }catch(e){}
+// ===== CLICK SOUND =====
+let ac;
+function clickSound(){
+  try{
+    ac = ac || new (window.AudioContext||window.webkitAudioContext)();
+    if(ac.state==="suspended") ac.resume();
+    const t = ac.currentTime;
+    [[523.25,0],[783.99,0.07]].forEach(([f,d])=>{
+      const o=ac.createOscillator(), g=ac.createGain();
+      o.type="sine"; o.frequency.value=f;
+      g.gain.setValueAtTime(0.0001,t+d);
+      g.gain.exponentialRampToValueAtTime(0.5,t+d+0.015);
+      g.gain.exponentialRampToValueAtTime(0.0001,t+d+0.35);
+      o.connect(g).connect(ac.destination);
+      o.start(t+d); o.stop(t+d+0.4);
+    });
+  }catch(e){}
+}
+document.addEventListener("click",e=>{ if(e.target.closest("a,button,.logo")) clickSound(); });
 render();
 </script>
 </body>
